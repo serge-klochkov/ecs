@@ -1,3 +1,3 @@
-## ECS in Rust
+## EC(S?) in Rust
 
-A simple ECS written in Rust for educational purposes
+A simple EC--S-- written in Rust for educational purposes
