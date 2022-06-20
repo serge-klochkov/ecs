@@ -4,20 +4,32 @@ use crate::events::events::Events;
 pub struct World {
     width: u32,
     height: u32,
+    tile_size: u32,
     entities: Vec<Entity>,
-    events: Events,
     last_id: usize,
 }
 
 impl World {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width_tiles: u32, height_tiles: u32, tile_size: u32) -> Self {
         World {
             entities: vec![],
-            events: Events::new(),
             last_id: 0,
-            width,
-            height,
+            width: width_tiles * tile_size,
+            height: height_tiles * tile_size,
+            tile_size,
         }
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    pub fn tile_size(&self) -> u32 {
+        self.tile_size
     }
 
     pub fn get_entity_by_id(&mut self, id: usize) -> &mut Entity {
@@ -39,7 +51,7 @@ impl World {
         self.entities.push(entity);
     }
 
-    pub fn update(&mut self) -> bool {
+    pub fn update(&mut self, mut events: &mut Events) -> bool {
         for i in 0..self.entities.len() {
             let entity = &self.entities[i];
             let mut components = entity.components_mut();
@@ -47,23 +59,23 @@ impl World {
                 Some(position) => position.apply_velocity(),
                 None => {}
             }
-            match components.collision.as_ref() {
-                None => {}
-                Some(collision) => {
-                    // let components = entity.components.borrow();
-                    let position = components.position.as_ref().unwrap();
-                    collision.process_collisions(
-                        entity.id,
-                        position,
-                        &self.entities,
-                        &mut self.events,
-                        self.width,
-                        self.height,
-                    );
+            if i == 0 {
+                match components.collision.as_ref() {
+                    None => {}
+                    Some(collision) => {
+                        let position = components.position.as_ref().unwrap();
+                        collision.process_collisions(
+                            entity.id,
+                            position,
+                            &self.entities,
+                            &mut events,
+                            self.width,
+                            self.height,
+                        );
+                    }
                 }
             }
         }
-        self.events.process(&self.entities);
         true
     }
 

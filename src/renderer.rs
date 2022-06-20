@@ -2,25 +2,22 @@ use std::collections::HashMap;
 
 use sdl2::image::{InitFlag, LoadTexture};
 use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
+use sdl2::rect::Rect;
 use sdl2::render::{Texture, TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
 use sdl2::Sdl;
 
 use crate::components::position::PositionComponent;
-use crate::components::sprite::SpriteComponent;
-use crate::controls::Controls;
+use crate::components::rendering::{Border, Rectangle, RenderingComponent, Sprite};
 
 pub struct Renderer {
-    context: Sdl,
-    window_canvas: WindowCanvas,
+    canvas: WindowCanvas,
     texture_creator: TextureCreator<WindowContext>,
     textures: HashMap<usize, Texture>,
 }
 
 impl Renderer {
-    pub fn new(width: u32, height: u32) -> Self {
-        let context = sdl2::init().expect("Failed to init SDL context");
+    pub fn new(context: &Sdl, width: u32, height: u32) -> Self {
         let video_subsystem = context
             .video()
             .expect("Failed to initialize the video subsystem");
@@ -31,22 +28,16 @@ impl Renderer {
             .position_centered()
             .build()
             .expect("Failed to create a window");
-        let window_canvas = window
+        let canvas = window
             .into_canvas()
             .build()
             .expect("Failed to create a canvas");
-        let texture_creator = window_canvas.texture_creator();
+        let texture_creator = canvas.texture_creator();
         Self {
             textures: HashMap::new(),
             texture_creator,
-            window_canvas,
-            context,
+            canvas,
         }
-    }
-
-    pub fn init_controls(&self) -> Controls {
-        let event_pump = self.context.event_pump().expect("Failed to get event pump");
-        Controls::new(event_pump)
     }
 
     pub fn add_texture(&mut self, texture_id: usize, path: &str) {
@@ -58,26 +49,66 @@ impl Renderer {
     }
 
     pub fn clear_canvas(&mut self) {
-        let color = Color::RGB(100, 64, 255);
-        self.window_canvas.set_draw_color(color);
-        self.window_canvas.clear();
+        let color = Color::from((87, 148, 199));
+        self.canvas.set_draw_color(color);
+        self.canvas.clear();
     }
 
     pub fn present_canvas(&mut self) {
-        self.window_canvas.present()
+        self.canvas.present()
     }
 
-    pub fn render_sprite(&mut self, sprite: &SpriteComponent, position: &PositionComponent) {
+    pub fn render(
+        &mut self,
+        rendering_component: &RenderingComponent,
+        position: &PositionComponent,
+    ) {
+        match rendering_component {
+            RenderingComponent::Sprite(sprite) => self.render_sprite(sprite, position),
+            RenderingComponent::Rectangle(rectangle) => self.render_rectangle(rectangle, position),
+        }
+    }
+
+    pub fn render_rectangle(&mut self, rectangle: &Rectangle, position: &PositionComponent) {
+        self.canvas.set_draw_color(rectangle.color);
+        self.canvas
+            .fill_rect(Rect::new(
+                position.x as i32,
+                position.y as i32,
+                rectangle.w,
+                rectangle.h,
+            ))
+            .unwrap();
+        match rectangle.border {
+            None => {}
+            Some(Border {
+                border_size,
+                border_color,
+            }) => {
+                self.canvas.set_draw_color(border_color);
+                for i in 0..border_size {
+                    self.canvas
+                        .draw_rect(Rect::new(
+                            position.x as i32 + i as i32,
+                            position.y as i32 + i as i32,
+                            rectangle.w - (i * 2),
+                            rectangle.h - (i * 2),
+                        ))
+                        .unwrap();
+                }
+            }
+        }
+    }
+
+    pub fn render_sprite(&mut self, sprite: &Sprite, position: &PositionComponent) {
         let texture = self.textures.get(&sprite.texture_id).expect(&format!(
             "Failed to get texture with ID {}",
             sprite.texture_id
         ));
-
-        let screen_position = Point::new(position.x as i32, position.y as i32);
-        let sprite = Rect::new(sprite.x, sprite.y, sprite.w, sprite.h);
-        let screen_rect = Rect::from_center(screen_position, sprite.width(), sprite.height());
-        self.window_canvas
-            .copy(texture, sprite, screen_rect)
+        let sprite_rectangle = Rect::new(0, 0, sprite.w, sprite.h);
+        let screen_rect = Rect::new(position.x as i32, position.y as i32, sprite.w, sprite.h);
+        self.canvas
+            .copy(texture, sprite_rectangle, screen_rect)
             .expect("Failed to copy texture")
     }
 }

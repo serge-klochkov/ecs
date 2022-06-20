@@ -1,7 +1,8 @@
 pub struct PositionComponent {
     pub x: f32,
     pub y: f32,
-    pub velocity: Velocity,
+    pub vx: f32,
+    pub vy: f32,
 }
 
 pub struct Velocity {
@@ -10,17 +11,12 @@ pub struct Velocity {
 }
 
 impl PositionComponent {
-    pub fn new(pos_x: f32, pos_y: f32, vel_x: f32, vel_y: f32) -> Self {
-        Self {
-            x: pos_x,
-            y: pos_y,
-            velocity: Velocity { x: vel_x, y: vel_y },
-        }
+    pub fn new(x: f32, y: f32, vx: f32, vy: f32) -> Self {
+        Self { x, y, vx, vy }
     }
 
     pub fn apply_velocity(&mut self) {
-        self.x += self.velocity.x;
-        self.y += self.velocity.y;
-        // println!("{}, {}", self.x, self.y)
+        self.x += self.vx;
+        self.y += self.vy;
     }
 }

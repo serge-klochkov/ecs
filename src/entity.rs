@@ -1,6 +1,6 @@
-use crate::components::collision::Collision;
+use crate::components::collision::CollisionComponent;
 use crate::components::position::PositionComponent;
-use crate::components::sprite::SpriteComponent;
+use crate::components::rendering::RenderingComponent;
 use std::cell::{Ref, RefCell, RefMut};
 
 pub struct Entity {
@@ -25,32 +25,22 @@ impl Entity {
     pub fn components_mut(&self) -> RefMut<'_, Components> {
         self.components.borrow_mut()
     }
-
-    // pub fn borrow_velocity_mut(&mut self) -> &mut Velocity {
-    //     &mut self
-    //         .components
-    //         .borrow_mut()
-    //         .position
-    //         .as_mut()
-    //         .expect("Failed to obtain position component reference")
-    //         .velocity
-    // }
 }
 
 pub struct Components {
-    pub sprite: Option<SpriteComponent>,
+    pub rendering: Option<RenderingComponent>,
     pub position: Option<PositionComponent>,
-    pub collision: Option<Collision>,
+    pub collision: Option<CollisionComponent>,
 }
 
 impl Components {
     pub fn new(
-        sprite: Option<SpriteComponent>,
+        rendering: Option<RenderingComponent>,
         position: Option<PositionComponent>,
-        collision: Option<Collision>,
+        collision: Option<CollisionComponent>,
     ) -> RefCell<Self> {
         RefCell::new(Self {
-            sprite,
+            rendering,
             position,
             collision,
         })
